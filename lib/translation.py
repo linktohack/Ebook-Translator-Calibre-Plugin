@@ -133,6 +133,8 @@ class Translation:
             raise TranslationCanceled(_('Translation canceled.'))
         try:
             text = self.glossary.replace(text)
+            # rotate api_key
+            self.translator.change_api_key(rotate=True)
             translation = self.translator.translate(text)
             self.abort_count = 0
             return translation

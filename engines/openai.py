@@ -68,6 +68,7 @@ class ChatgptTranslate(Base):
         return prompt
 
     def _get_headers(self):
+        print("ChatgptTranslate::_get_headers api_key {}".format(self.api_key))
         return {
             'Content-Type': 'application/json',
             'Authorization': 'Bearer %s' % self.api_key,

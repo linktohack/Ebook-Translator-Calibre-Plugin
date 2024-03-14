@@ -1,5 +1,6 @@
 import ssl
 import os.path
+from random import shuffle
 
 from mechanize import Browser, Request, HTTPError
 from calibre import get_proxies
@@ -41,7 +42,7 @@ class Base:
 
         self.api_keys = self.config.get('api_keys', [])[:]
         self.bad_api_keys = []
-        self.api_key = self._get_api_key()
+        self.api_key = self._get_api_key(rotate=True)
 
         concurrency_limit = self.config.get('concurrency_limit')
         if concurrency_limit is not None:
@@ -88,8 +89,11 @@ class Base:
         return _('A correct key format "{}" is required.') \
             .format(cls.api_key_hint)
 
-    def change_api_key(self):
+    def change_api_key(self, rotate=False):
         """Change the API key if the previous one cannot be used."""
+        if rotate:
+            self.api_key = self._get_api_key(rotate=True)
+            return True
         if self.api_key not in self.bad_api_keys:
             self.bad_api_keys.append(self.api_key)
             self.api_key = self._get_api_key()
@@ -157,8 +161,13 @@ class Base:
     def _is_auto_lang(self):
         return self._get_source_code() == 'auto'
 
-    def _get_api_key(self):
+    def _get_api_key(self, rotate=False):
         if self.need_api_key and self.api_keys:
+            t = self.api_keys[:]
+            shuffle(t)
+            self.api_keys = t
+            if rotate:
+                return t[-1]
             return self.api_keys.pop(0)
         return None
 
@@ -183,6 +192,8 @@ class Base:
 
     def get_result(self, url, data=None, headers={}, method='GET',
                    stream=False, silence=False, callback=None):
+        from http.client import HTTPConnection
+        HTTPConnection._http_vsn_str = 'HTTP/1.1'
         # Compatible with mechanize 0.3.0 on Calibre 3.21.
         try:
             request = Request(

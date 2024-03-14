@@ -688,6 +688,7 @@ class ElementHandlerMerge(ElementHandler):
         raw = ''
         txt = ''
         oid = 0
+        prev_element = None
         for eid, element in enumerate(elements):
             self.elements[eid] = element
             if element.ignored:
@@ -705,9 +706,11 @@ class ElementHandlerMerge(ElementHandler):
             code = element.get_raw()
             content = element.get_content()
             content += self.separator
-            if len(txt + content) < self.merge_length:
+            if (len((txt + content).split(" ")) < self.merge_length and
+                    (prev_element is None or prev_element.page_id == element.page_id)):
                 raw += code + self.separator
                 txt += content
+                prev_element = element
                 continue
             elif txt:
                 md5 = uid('%s%s' % (oid, txt))
@@ -715,6 +718,7 @@ class ElementHandlerMerge(ElementHandler):
                 oid += 1
             raw = code
             txt = content
+            prev_element = element
         md5 = uid('%s%s' % (oid, txt))
         txt and self.originals.append((oid, md5, raw, txt, False))
         return self.originals
